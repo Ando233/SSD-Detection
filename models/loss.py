@@ -3,7 +3,7 @@ import torch.nn as nn
 
 
 # 求n个anchor和target的交并比
-def get_iou(anchor, target):
+def get_iou(anchor, target, device):
     # anchor -> [4, 4]
     # target -> [4]
 
@@ -21,7 +21,7 @@ def get_iou(anchor, target):
     target_s = target_w * target_h
 
     # 求重叠部分坐标
-    cross = torch.empty(anchor.shape)
+    cross = torch.empty(anchor.shape, device=device)
 
     # 左上角坐标取最大值,也就是取最右,下的点
     cross[:, 0] = torch.max(anchor[:, 0], target[0])
@@ -82,15 +82,15 @@ def get_offset(anchor, target):
 
 
 # 求每个anchor是激活还是非激活
-def get_active(anchor, target):
+def get_active(anchor, target, device):
     # anchor -> [16, 4]
     # target -> [4]
 
     # 不是0就是1,激活的是1,非激活的是0
-    active = torch.zeros(len(anchor), dtype=torch.long)
+    active = torch.zeros(len(anchor), dtype=torch.long, device=device)
 
     # 求每个anchor和target的交并比
-    iou = get_iou(anchor, target)
+    iou = get_iou(anchor, target, device)
 
     # 大于阈值的active,最大值active,其他都是非active
     active[iou >= 0.5] = 1
@@ -132,7 +132,7 @@ def get_active_offset(active, anchor, target):
     return offset
 
 
-def get_truth(anchor, target):
+def get_truth(anchor, target, device):
     # anchor -> [16, 4]
     # target -> [2, 4]
 
@@ -142,7 +142,7 @@ def get_truth(anchor, target):
     for i in range(len(target)):
         # 求每个anchor是激活还是非激活
         # [16]
-        active = get_active(anchor, target[i])
+        active = get_active(anchor, target[i], device)
 
         # 根据active,转换成0和1,显然,active的是1,非active的是0
         # [16, 4]
@@ -170,7 +170,7 @@ def get_truth(anchor, target):
 
 
 # 求loss
-def get_loss(label_pred, offset_pred, label, offset, masks):
+def get_loss(label_pred, offset_pred, label, offset, masks, device):
     # label_pred -> [32, 5444, 2]
     # offset_pred -> [32, 21776]
 
@@ -185,7 +185,7 @@ def get_loss(label_pred, offset_pred, label, offset, masks):
     label = label.reshape(-1)
 
     # [174208]
-    get_loss_cls = nn.CrossEntropyLoss(reduction='none')
+    get_loss_cls = nn.CrossEntropyLoss(reduction='none').to(device)
     loss_cls = get_loss_cls(label_pred, label)
     # [174208] -> [32, 5444]
     loss_cls = loss_cls.reshape(32, -1)
@@ -198,7 +198,7 @@ def get_loss(label_pred, offset_pred, label, offset, masks):
     offset *= masks
 
     # [32, 21776]
-    get_loss_box = nn.L1Loss(reduction='none')
+    get_loss_box = nn.L1Loss(reduction='none').to(device)
     loss_box = get_loss_box(offset_pred, offset)
     # [32, 21776] -> [32]
     loss_box = loss_box.mean(dim=1)
