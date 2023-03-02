@@ -57,21 +57,21 @@ def get_anchor(image_size, anchor_size_small, anchor_size_big):
 # 在图片上画出anchor
 # x
 def show(x, y, anchor):
-    x = x.detach().numpy()
+    x = x.detach().cpu().numpy()
     x = x.astype(np.uint8)
 
     # (3, 256, 256) -> (256, 256, 3)
     x = x.transpose((1, 0, 2))
     x = x.transpose((0, 2, 1))
 
-    y = y.detach().numpy()
+    y = y.detach().cpu().numpy()
     y = y * 256.0
 
     image = PIL.Image.fromarray(x)
     draw = PIL.ImageDraw.Draw(image)
 
     # 因为anchor的值域是0-1,需要转换到实际的图片尺寸.
-    anchor = anchor.detach().numpy() * 256
+    anchor = anchor.detach().cpu().numpy() * 256
 
     # 画框
     for i in range(len(anchor)):

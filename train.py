@@ -51,10 +51,5 @@ if __name__ == '__main__':
                                    shuffle=True,
                                    drop_last=True)
 
-    loader_test = data.DataLoader(dataset=MyDataset(mode='test'),
-                                  batch_size=32,
-                                  shuffle=True,
-                                  drop_last=True)
-
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     train()
