@@ -4,6 +4,32 @@ from matplotlib import pyplot as plt
 import PIL.Image
 import PIL.ImageDraw
 
+from config import HiXray_CLASSES
+
+
+def transform_target(target_path, width, height):
+    with open(target_path, "r", encoding='utf-8') as f1:
+        anno_read = f1.readlines()
+
+        # 一个图片可能有多个标注
+        # 一个标注的格式是 [image_name] [object_name] [x_min y_min x_max y_max]
+        for annotation in anno_read:
+            args = annotation.split()
+            name = args[1]
+            if name not in HiXray_CLASSES:
+                continue
+
+            x_min = int(args[2]) / width
+            y_min = int(args[3]) / height
+            x_max = int(args[4]) / width
+            y_max = int(args[5]) / height
+
+            class_dict = dict(zip(HiXray_CLASSES, range(len(HiXray_CLASSES))))
+
+            label = class_dict[name]
+            bound_box = [x_min, y_min, x_max, y_max, label]
+            return bound_box
+
 
 # 生成image_size**2个大框,image_size**2 *3个小框,均匀分布在图片上
 def get_anchor(image_size, anchor_size_small, anchor_size_big):
@@ -82,6 +108,7 @@ def show(x, y, anchor):
     plt.figure(figsize=(5, 5))
     plt.imshow(image)
     plt.show()
+
 
 if __name__ == '__main__':
     show(x[0], y[0], anchor)
